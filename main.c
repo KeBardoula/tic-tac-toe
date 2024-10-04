@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include "tic-tac-toe.h"
 
 // Fonction pour initialiser le plateau
@@ -51,14 +52,32 @@ void playerMove(char board[3][3]) {
 
 // Déplacement de l'ordinateur (remplit la première case disponible)
 void computerMove(char board[3][3]) {
+    // Initialiser le générateur de nombres aléatoires avec l'heure actuelle
+    srand(time(0));
+
+    // Créer une liste des positions vides
+    int emptyPositions[9][2]; // Stocke jusqu'à 9 positions
+    int emptyCount = 0;
+
+    // Parcourir le plateau pour trouver les cases vides
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (board[i][j] != PLAYER_SYMBOL && board[i][j] != COMPUTER_SYMBOL) {
-                board[i][j] = COMPUTER_SYMBOL;
-                sleep(1); // Pause pour simuler un temps de réflexion
-                return;
+                emptyPositions[emptyCount][0] = i;
+                emptyPositions[emptyCount][1] = j;
+                emptyCount++;
             }
         }
+    }
+
+    // Si des positions vides existent, choisir une position aléatoire
+    if (emptyCount > 0) {
+        int randomIndex = rand() % emptyCount; // Choisir un index aléatoire
+        int row = emptyPositions[randomIndex][0];
+        int col = emptyPositions[randomIndex][1];
+
+        board[row][col] = COMPUTER_SYMBOL;
+        sleep(1); // Pause pour simuler un temps de réflexion
     }
 }
 
