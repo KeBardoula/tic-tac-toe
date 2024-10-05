@@ -1,4 +1,3 @@
-// main.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,11 +6,9 @@
 
 // Fonction pour initialiser le plateau
 void initializeBoard(char board[3][3]) {
-    int k = 0;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            board[i][j] = k + '0';
-            k++;
+            board[i][j] = ' '; // Initialiser avec des espaces vides
         }
     }
 }
@@ -50,56 +47,89 @@ void playerMove(char board[3][3]) {
     board[row][col] = PLAYER_SYMBOL;
 }
 
-// Déplacement de l'ordinateur (remplit la première case disponible)
-void computerMove(char board[3][3]) {
-    // Initialiser le générateur de nombres aléatoires avec l'heure actuelle
-    srand(time(0));
-
-    // Créer une liste des positions vides
-    int emptyPositions[9][2]; // Stocke jusqu'à 9 positions
-    int emptyCount = 0;
-
-    // Parcourir le plateau pour trouver les cases vides
+// Vérifier si un joueur peut gagner lors du prochain coup
+int canWin(char board[3][3], char symbol) {
+    // Vérifier les lignes
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (board[i][j] != PLAYER_SYMBOL && board[i][j] != COMPUTER_SYMBOL) {
-                emptyPositions[emptyCount][0] = i;
-                emptyPositions[emptyCount][1] = j;
-                emptyCount++;
+        if (board[i][0] == symbol && board[i][1] == symbol && board[i][2] == ' ') return i * 3 + 2;
+        if (board[i][0] == symbol && board[i][2] == symbol && board[i][1] == ' ') return i * 3 + 1;
+        if (board[i][1] == symbol && board[i][2] == symbol && board[i][0] == ' ') return i * 3;
+    }
+    // Vérifier les colonnes
+    for (int j = 0; j < 3; j++) {
+        if (board[0][j] == symbol && board[1][j] == symbol && board[2][j] == ' ') return 6 + j;
+        if (board[0][j] == symbol && board[2][j] == symbol && board[1][j] == ' ') return 3 + j;
+        if (board[1][j] == symbol && board[2][j] == symbol && board[0][j] == ' ') return j;
+    }
+    // Vérifier les diagonales
+    if (board[0][0] == symbol && board[1][1] == symbol && board[2][2] == ' ') return 8;
+    if (board[0][0] == symbol && board[2][2] == symbol && board[1][1] == ' ') return 4;
+    if (board[1][1] == symbol && board[2][2] == symbol && board[0][0] == ' ') return 0;
+
+    if (board[0][2] == symbol && board[1][1] == symbol && board[2][0] == ' ') return 6;
+    if (board[0][2] == symbol && board[2][0] == symbol && board[1][1] == ' ') return 4;
+    if (board[1][1] == symbol && board[2][0] == symbol && board[0][2] == ' ') return 2;
+
+    return -1; // Aucun coup gagnant possible
+}
+
+// Déplacement de l'ordinateur avec latence
+void computerMove(char board[3][3]) {
+    // Introduire une latence pour simuler la réflexion de l'ordinateur
+    printf("L'ordinateur réfléchit...\n");
+    sleep(2); // Attente de 2 secondes (ajustable)
+
+    // Vérifier si l'ordinateur peut gagner
+    int position = canWin(board, COMPUTER_SYMBOL);
+    if (position == -1) {
+        // Sinon, vérifier si le joueur peut gagner, et bloquer
+        position = canWin(board, PLAYER_SYMBOL);
+    }
+    if (position == -1) {
+        // Sinon, jouer aléatoirement
+        srand(time(0));
+
+        int emptyPositions[9];
+        int emptyCount = 0;
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] != PLAYER_SYMBOL && board[i][j] != COMPUTER_SYMBOL) {
+                    emptyPositions[emptyCount] = i * 3 + j;
+                    emptyCount++;
+                }
             }
+        }
+
+        if (emptyCount > 0) {
+            position = emptyPositions[rand() % emptyCount];
         }
     }
 
-    // Si des positions vides existent, choisir une position aléatoire
-    if (emptyCount > 0) {
-        int randomIndex = rand() % emptyCount; // Choisir un index aléatoire
-        int row = emptyPositions[randomIndex][0];
-        int col = emptyPositions[randomIndex][1];
-
-        board[row][col] = COMPUTER_SYMBOL;
-        sleep(1); // Pause pour simuler un temps de réflexion
-    }
+    int row = position / 3;
+    int col = position % 3;
+    board[row][col] = COMPUTER_SYMBOL;
 }
 
 // Vérifier si quelqu'un a gagné
 int checkWinner(char board[3][3]) {
     // Vérifier les lignes
     for (int i = 0; i < 3; i++) {
-        if (board[i][0] == board[i][1] && board[i][1] == board[i][2]) {
+        if (board[i][0] != ' ' && board[i][0] == board[i][1] && board[i][1] == board[i][2]) {
             return (board[i][0] == PLAYER_SYMBOL) ? 1 : 2;
         }
     }
     // Vérifier les colonnes
     for (int j = 0; j < 3; j++) {
-        if (board[0][j] == board[1][j] && board[1][j] == board[2][j]) {
+        if (board[0][j] != ' ' && board[0][j] == board[1][j] && board[1][j] == board[2][j]) {
             return (board[0][j] == PLAYER_SYMBOL) ? 1 : 2;
         }
     }
     // Vérifier les diagonales
-    if (board[0][0] == board[1][1] && board[1][1] == board[2][2]) {
+    if (board[0][0] != ' ' && board[0][0] == board[1][1] && board[1][1] == board[2][2]) {
         return (board[0][0] == PLAYER_SYMBOL) ? 1 : 2;
     }
-    if (board[0][2] == board[1][1] && board[1][1] == board[2][0]) {
+    if (board[0][2] != ' ' && board[0][2] == board[1][1] && board[1][1] == board[2][0]) {
         return (board[0][2] == PLAYER_SYMBOL) ? 1 : 2;
     }
 
@@ -116,11 +146,17 @@ void playGame() {
 
     while (moves < 9 && winner == 0) {
         displayBoard(board);
+
+        // Tour du joueur
         playerMove(board);
         moves++;
         winner = checkWinner(board);
         if (winner || moves == 9) break;
 
+        // Afficher le plateau après le coup du joueur
+        displayBoard(board);
+
+        // Tour de l'ordinateur
         computerMove(board);
         moves++;
         winner = checkWinner(board);
